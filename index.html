@@ -731,8 +731,11 @@
 
     try {
         await fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify(payload)
+        method: 'POST',
+        mode: 'no-cors',
+        cache: 'no-cache', // Menghindari browser mengirim data lama
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
         });
         
         showNotif("Berhasil", "Data terkirim ke sheet analisis", "success");
