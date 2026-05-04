@@ -696,55 +696,58 @@
             }
         }
 
+        /**
+         * FUNGSI SAVE PROGRESS YANG MEMANGGIL FINISHANDCLOSE SECARA OTOMATIS
+         */
         async function saveProgress() {
             const loader = document.getElementById('saving-loader');
-            loader.classList.remove('hidden');
+            if (loader) loader.classList.remove('hidden');
+            
             try {
+                // 1. Kirim progress utama (Sheet Utama)
                 await fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify({ nis: state.user.nis, status: "Selesai" })
                 });
+
+                // 2. Panggil fungsi finishAndClose untuk mengirim data analisis
+                await finishAndClose();
+                
+                // 3. Refresh database lokal
                 await fetchDatabase(); 
             } catch (e) {
                 console.error("Gagal menyimpan ke server.");
+                showNotif("Ralat", "Gagal menyimpan progress.", "error");
             } finally {
-                loader.classList.add('hidden');
+                if (loader) loader.classList.add('hidden');
             }
         }
 
         /**
-         * FUNGSI UNTUK MENGIRIM DATA HASIL ANALISIS KE SPREADSHEET
+         * FUNGSI UNTUK MENGIRIM DATA HASIL ANALISIS KE SPREADSHEET (SHEET: ANALISIS)
          */
         async function finishAndClose() {
-    if (!state.user) return;
+            if (!state.user) return;
 
-    const loader = document.getElementById('saving-loader');
-    loader.classList.remove('hidden');
+            const payload = {
+                sheet: "analisis",
+                Nama: state.user.nama,
+                NIS: state.user.nis,
+                Kelas: document.getElementById('user-display-kelas').innerText,
+                hasil: state.isFinished ? "lulus" : "belum"
+            };
 
-    const payload = {
-        sheet: "analisis",
-        Nama: state.user.nama,
-        NIS: state.user.nis,
-        Kelas: document.getElementById('user-display-kelas').innerText,
-        hasil: state.isFinished ? "lulus" : "belum"
-    };
-
-    try {
-        await fetch(SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        cache: 'no-cache', // Menghindari browser mengirim data lama
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-        });
-        
-        showNotif("Berhasil", "Data terkirim ke sheet analisis", "success");
-        setTimeout(() => { location.reload(); }, 2000);
-    } catch (e) {
-        showNotif("Gagal", "Cek koneksi internet", "error");
-        loader.classList.add('hidden');
-    }
-}
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                console.log("Data analisis berjaya dihantar.");
+            } catch (e) {
+                console.error("Gagal menghantar data analisis.");
+                throw e; // Lemparkan error agar ditangkap di saveProgress
+            }
+        }
 
         function renderAnalysis() {
             const icon = document.getElementById('status-icon');
